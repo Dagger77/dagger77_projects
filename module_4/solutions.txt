@@ -1,0 +1,96 @@
+Задание 4.1
+
+SELECT a.city,
+       count(a.airport_code)
+FROM dst_project.airports a
+GROUP BY a.city
+ORDER BY 2 DESC
+
+4.2.1
+
+SELECT count(DISTINCT f.status)
+FROM dst_project.flights f
+
+4.2.2
+
+SELECT count(flight_id)
+FROM dst_project.flights f
+WHERE f.status = 'Departed'
+
+4.2.3
+
+SELECT count(s.seat_no)
+FROM dst_project.seats s
+JOIN dst_project.aircrafts ac ON s.aircraft_code = ac.aircraft_code
+WHERE ac.aircraft_code = '773'
+
+4.2.4
+
+SELECT count(f.flight_id)
+FROM dst_project.flights f
+WHERE f.status = 'Arrived'
+  AND f.scheduled_arrival BETWEEN '04.01.2017' AND '09.01.2017'
+
+4.3.1
+
+SELECT count(f.flight_id)
+FROM dst_project.flights f
+WHERE f.status = 'Cancelled'
+
+4.3.2
+
+Options: Show plain text | Copy to clipboard | Print result
+SELECT *
+FROM dst_project.aircrafts ac
+WHERE ac.model LIKE 'Airbus%'
+  OR ac.model LIKE 'Boeing%'
+  OR ac.model LIKE 'Sukh%'
+ORDER BY ac.model
+
+4.3.3
+
+SELECT 'Asia' region,
+              count(ap.airport_code)
+FROM dst_project.airports ap
+WHERE ap.timezone LIKE 'Asia%'
+UNION ALL
+SELECT 'Europe',
+       count(ap.airport_code)
+FROM dst_project.airports ap
+WHERE ap.timezone LIKE 'Europe%'
+UNION ALL
+SELECT 'Australia',
+       count(ap.airport_code)
+FROM dst_project.airports ap
+WHERE ap.timezone LIKE 'Australia%'
+
+4.3.4
+
+SELECT f.flight_id,
+       f.actual_arrival - f.scheduled_arrival
+FROM dst_project.flights f
+WHERE f.status = 'Arrived'
+ORDER BY 2 DESC
+LIMIT 1
+
+4.4.1
+
+SELECT min(f.scheduled_departure)
+FROM dst_project.flights f
+
+4.4.2
+
+SELECT extract(HOUR
+               FROM max(f.scheduled_arrival-f.scheduled_departure))*60 + extract(MINUTE
+                                                                                 FROM max(f.scheduled_arrival-f.scheduled_departure))
+FROM dst_project.flights f
+
+4.4.3
+
+SELECT f.departure_airport,
+       f.arrival_airport,
+       max(f.scheduled_arrival-f.scheduled_departure)
+FROM dst_project.flights f
+GROUP BY f.departure_airport,
+         f.arrival_airport
+ORDER BY 3 DESC
