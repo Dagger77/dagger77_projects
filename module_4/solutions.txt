@@ -94,3 +94,128 @@ FROM dst_project.flights f
 GROUP BY f.departure_airport,
          f.arrival_airport
 ORDER BY 3 DESC
+
+4.4.4
+SELECT date_part('hour', avg(f.actual_arrival-f.actual_departure))*60 + date_part('minute', avg(f.actual_arrival-f.actual_departure))
+FROM dst_project.flights f
+
+4.5.1
+
+SELECT fare_conditions,
+       count(s.seat_no)
+FROM dst_project.seats s
+WHERE s.aircraft_code = 'SU9'
+GROUP BY fare_conditions
+
+4.5.2
+
+SELECT min(b.total_amount)
+FROM dst_project.bookings b
+
+4.5.3
+
+SELECT bp.seat_no
+FROM dst_project.tickets t
+JOIN dst_project.boarding_passes bp ON t.ticket_no=bp.ticket_no
+WHERE t.passenger_id = '4313 788533'
+
+5.1.1
+
+SELECT count(f.flight_id)
+FROM dst_project.flights f
+JOIN dst_project.airports ap ON f.arrival_airport=ap.airport_code
+WHERE ap.city = 'Anapa'
+  AND f.status = 'Arrived'
+  AND f.actual_arrival BETWEEN '01.01.2017' AND '12.31.2017'
+
+5.1.2
+
+SELECT count(f.flight_id)
+FROM dst_project.flights f
+JOIN dst_project.airports ap ON f.departure_airport=ap.airport_code
+WHERE ap.city = 'Anapa'
+  AND f.actual_departure BETWEEN '2017-01-01 00:00:00' AND '2017-02-28 23:59:59'
+  OR f.actual_departure BETWEEN '2017-12-01 00:00:00' AND '2017-12-31 23:59:59'
+
+5.1.3
+
+SELECT count(f.flight_id)
+FROM dst_project.flights f
+JOIN dst_project.airports ap ON f.departure_airport=ap.airport_code
+WHERE ap.city = 'Anapa'
+  AND f.status = 'Cancelled'
+
+5.1.4
+
+SELECT count(DISTINCT f.flight_id)
+FROM dst_project.flights f
+LEFT JOIN dst_project.airports ap ON f.arrival_airport = ap.airport_code
+WHERE f.departure_airport = 'AAQ'
+  AND ap.city != 'Moscow'
+
+5.1.5
+
+SELECT DISTINCT ac.model,
+                count(s.seat_no)
+FROM dst_project.flights f
+LEFT JOIN dst_project.seats s ON f.aircraft_code = s.aircraft_code
+LEFT JOIN dst_project.aircrafts ac ON f.aircraft_code = ac.aircraft_code
+WHERE f.departure_airport = 'AAQ'
+GROUP BY f.flight_id,
+         ac.model
+
+FINAL DATASET REQUEST 
+
+WITH st AS 
+  (SELECT s.aircraft_code,
+          count(s.seat_no) seat_num
+   FROM dst_project.seats s
+   GROUP BY s.aircraft_code) -- total number of seats on aircraft
+SELECT f.flight_id,
+       f.flight_no,
+       f.scheduled_departure,
+       f.scheduled_arrival,
+       f.actual_departure,
+       f.actual_arrival,
+       f.departure_airport,
+       ap1.airport_name,
+       ap1.city,
+       ap1.longitude,
+       ap1.latitude,
+       ap1.timezone,
+       f.arrival_airport,
+       ap.airport_name,
+       ap.city,
+       ap.longitude,
+       ap.latitude,
+       ap.timezone,
+       f.aircraft_code,
+       st.seat_num,
+       ac.model,
+       ac.range,
+       tf.ticket_no,
+       tf.fare_conditions,
+       tf.amount,
+       bp.seat_no,
+       t.book_ref,
+       t.passenger_id,
+       b.book_date,
+       b.total_amount
+FROM dst_project.flights f
+LEFT JOIN dst_project.aircrafts ac ON f.aircraft_code = ac.aircraft_code
+LEFT JOIN dst_project.airports ap ON f.arrival_airport = ap.airport_code
+LEFT JOIN dst_project.airports ap1 ON f.departure_airport = ap1.airport_code
+LEFT JOIN dst_project.ticket_flights tf ON f.flight_id = tf.flight_id
+LEFT JOIN dst_project.boarding_passes bp ON tf.ticket_no = bp.ticket_no
+AND tf.flight_id=bp.flight_id
+LEFT JOIN dst_project.tickets t ON tf.ticket_no = t.ticket_no
+LEFT JOIN dst_project.bookings b ON t.book_ref = b.book_ref
+LEFT JOIN st ON f.aircraft_code = st.aircraft_code
+WHERE f.departure_airport = 'AAQ'
+  AND (date_trunc('month', f.scheduled_departure) in ('2017-01-01',
+                                                      '2017-02-01',
+                                                      '2017-12-01'))
+  AND f.status not in ('Cancelled')
+ORDER BY f.scheduled_departure,
+         f.flight_id,
+         bp.seat_no
