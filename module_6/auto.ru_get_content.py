@@ -4,9 +4,9 @@
 # In[ ]:
 
 
-### Парсер ссылок на объявления на auto.ru
-### Взят у https://github.com/vorontsovdg/autoru_parser и исправлен под текущую структуру страницы с объявлением
-### Запускается из консоли с ключом --f и указанием файла со ссылками
+# Парсер ссылок на объявления на auto.ru
+# Взят у https://github.com/vorontsovdg/autoru_parser и исправлен под текущую структуру страницы с объявлением
+# Запускается из консоли с ключом -f и указанием файла со ссылками
 
 import requests
 from bs4 import BeautifulSoup
@@ -16,7 +16,8 @@ import csv
 from multiprocessing import Pool
 import argparse
 
-fieldNames = ['url', 'bodyType', 'brand', 'color', 'fuelType', 'modelDate', 'modelName', 'name', 'numberOfDoors', 'productionDate',
+fieldNames = ['url', 'bodyType', 'brand', 'color', 'fuelType', 'modelDate', 'modelName', 'name', 'model_attr',
+              'numberOfDoors', 'model_razgon', 'model_consumption', 'model_class', 'productionDate',
               'vehicleTransmission', 'engineDisplacement', 'enginePower', 'description', 'mileage', 'Комплектация',
               'Привод', 'Руль', 'Состояние', 'Владельцы', 'ПТС', 'Таможня', 'Владение', 'Price']
 
@@ -74,14 +75,96 @@ def findModelName(soup):
         ModelName = None
     return ModelName
 
+
+def findModel_attr(soup):
+    try:
+        Model_attr = soup.find('div', id="sale-data-attributes")['data-bem']
+    except:
+        Model_attr = None
+    return Model_attr
+
+
 def findName(soup):
     try:
-        name = soup.find_all('a', class_='Link Link_color_gray CardBreadcrumbs__itemText')[-1].text.strip()
+        name = soup.find_all(
+            'a', class_='Link Link_color_gray CardBreadcrumbs__itemText')[-1].text.strip()
     except:
         name = None
     return name
 
+
 def findNumberOfDoors(soup):
+    check = False
+    if soup is None:
+        return None
+    else:
+        try:
+            info = soup.find('div', class_='content__page search-form-v2-controller__content').find(
+                'div', class_='catalog__section catalog__section_package clearfix').find(
+                'div', class_='catalog__content').find('dl', class_='list-values clearfix')
+            names = info.find_all('dt')
+            for i in range(0, len(names)+1):
+                if names[i].text == 'Количество дверей':
+                    check = True
+                    break
+            if check:
+                numDoors = info.find_all('dd')[i].text
+                return numDoors
+            else:
+                return None
+        except:
+            return None
+        return None
+
+
+def findModelRazgon(soup):
+    check = False
+    if soup is None:
+        return None
+    else:
+        try:
+            info = soup.find('div', class_='content__page search-form-v2-controller__content').find(
+                'div', class_='catalog__section catalog__section_package clearfix').find(
+                'div', class_='catalog__content').find_all('dl', class_='list-values list-values_view_ext clearfix')[-1]
+            names = info.find_all('dt')
+            for i in range(0, len(names)+1):
+                if names[i].text == 'Разгон':
+                    check = True
+                    break
+            if check:
+                modelRazgon = info.find_all('dd')[i].text
+                return modelRazgon
+            else:
+                return None
+        except:
+            return None
+        return None
+        
+def findModelConsumption(soup):
+    check = False
+    if soup is None:
+        return None
+    else:
+        try:
+            info = soup.find('div', class_='content__page search-form-v2-controller__content').find(
+                'div', class_='catalog__section catalog__section_package clearfix').find(
+                'div', class_='catalog__content').find_all('dl', class_='list-values list-values_view_ext clearfix')[-1]
+            names = info.find_all('dt')
+            for i in range(0, len(names)+1):
+                if names[i].text == 'Расход':
+                    check = True
+                    break
+            if check:
+                modelRazgon = info.find_all('dd')[i].text
+                return modelRazgon
+            else:
+                return None
+        except:
+            return None
+        return None
+
+
+def findModelClass(soup):
     check = False
     if soup is None:
         return None
@@ -91,12 +174,12 @@ def findNumberOfDoors(soup):
                 'div', class_='catalog__section catalog__section_package clearfix').find('div', class_='catalog__content').find('dl', class_='list-values clearfix')
             names = info.find_all('dt')
             for i in range(0, len(names)+1):
-                if names[i].text == 'Количество дверей':
+                if names[i].text == 'Класс автомобиля':
                     check = True
                     break
             if check:
-                numDoors = info.find_all('dd')[i].text
-                return numDoors
+                model_class = info.find_all('dd')[i].text
+                return model_class
             else:
                 return None
         except:
@@ -144,7 +227,7 @@ def findEnginePower(soup):
 def find_description(soup):
     try:
         description = soup.find('div', class_='CardDescription CardOfferBody__contentIsland').find(
-            class_='CardDescription__textInner').get_text(strip=True)
+            class_='CardDescription__textInner').get_text("|", strip=True)
         return description
     except:
         return None
@@ -276,7 +359,11 @@ def main(url):
     modelDate = findModelProductionDate(modelSoup)
     modelName = findModelName(soup)
     name = findName(soup)
+    model_attr = findModel_attr(soup)
     numberOfDoors = findNumberOfDoors(modelSoup)
+    model_razgon = findModelRazgon(modelSoup)
+    model_consumption = findModelConsumption(modelSoup)
+    model_class = findModelClass(modelSoup)
     productionDate = findProductionYear(soup)
     venicleTransmission = findTransmission(soup)
     engineDisplacement = findEngineDisplacement(soup)
@@ -304,7 +391,11 @@ def main(url):
             'modelDate': modelDate,
             'modelName': modelName,
             'name': name,
+            'model_attr': model_attr,
             'numberOfDoors': numberOfDoors,
+            'model_razgon': model_razgon,
+            'model_consumption': model_consumption,
+            'model_class': model_class,
             'productionDate': productionDate,
             'vehicleTransmission': venicleTransmission,
             'engineDisplacement': engineDisplacement,
