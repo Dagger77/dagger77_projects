@@ -1,0 +1,4 @@
+ML-engineer. Module 15 Project.
+
+TimeSeries analysis and prediction.
+ARIMA/SARIMA. Regression. Boosting. Cross Validation.
